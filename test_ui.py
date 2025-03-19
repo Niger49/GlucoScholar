@@ -15,7 +15,7 @@ class DiabetesPredictorApp:
     def __init__(self, root):
         self.root = root
         self.root.title("GlucoScholar Diabetes Predictor")
-        self.root.geometry("800x800")
+        self.root.geometry("800x650")
         
         # Configure default font and colors
         self.root.configure(bg='#f0f0f0')
@@ -77,7 +77,7 @@ class DiabetesPredictorApp:
         ttk.Button(self.dataset_frame, text="Browse", command=self.load_dataset).grid(row=0, column=2)
         
         # Style for text widget
-        self.results_text = tk.Text(self.dataset_frame, height=8, width=60, 
+        self.results_text = tk.Text(self.dataset_frame, height=9, width=60, 
                                   bg='#ffffff', fg='#2c3e50',
                                   font=('Arial', 11))
         self.results_text.grid(row=1, column=0, columnspan=3, padx=10, pady=5)

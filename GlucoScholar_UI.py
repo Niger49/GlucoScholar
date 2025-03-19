@@ -15,7 +15,7 @@ class DiabetesPredictorApp:
     def __init__(self, root):
         self.root = root
         self.root.title("GlucoScholar Diabetes Predictor")
-        self.root.geometry("800x800")
+        self.root.geometry("800x650")
         
         # Configure default font and colors
         self.root.configure(bg='#f0f0f0')
@@ -77,7 +77,7 @@ class DiabetesPredictorApp:
         ttk.Button(self.dataset_frame, text="Browse", command=self.load_dataset).grid(row=0, column=2)
         
         # Style for text widget
-        self.results_text = tk.Text(self.dataset_frame, height=8, width=60, 
+        self.results_text = tk.Text(self.dataset_frame, height=9, width=60, 
                                   bg='#ffffff', fg='#2c3e50',
                                   font=('Arial', 11))
         self.results_text.grid(row=1, column=0, columnspan=3, padx=10, pady=5)
@@ -293,10 +293,47 @@ class DiabetesPredictorApp:
         query = self.image_text.get("1.0", "end-1c").split('\n')[-1]
         if query:
             try:
+                # Show searching status
+                self.image_text.insert(tk.END, "\n\nSearching...\n")
+                self.root.update()
+
+                # Add initial delay
+                time.sleep(2)
+
                 results = self.info_fetcher.google_search(query)
-                self.image_text.insert(tk.END, "\n\nSearch Results:\n" + "\n".join(results[:3]))
+                
+                # Clear searching status
+                self.image_text.delete("end-2c linestart", "end-1c lineend")
+                
+                if results:
+                    self.image_text.insert(tk.END, "\nSearch Results:\n")
+                    for i, url in enumerate(results, 1):
+                        self.image_text.insert(tk.END, f"{i}. ", "normal")
+                        self.image_text.insert(tk.END, url + "\n", f"hyperlink url-{url}")
+                else:
+                    self.image_text.insert(tk.END, "\nUsing alternative medical resources:\n")
+                    default_urls = [
+                        "https://www.diabetes.org/",
+                        "https://www.niddk.nih.gov/health-information/diabetes",
+                        "https://www.who.int/health-topics/diabetes"
+                    ]
+                    for i, url in enumerate(default_urls, 1):
+                        self.image_text.insert(tk.END, f"{i}. ", "normal")
+                        self.image_text.insert(tk.END, url + "\n", f"hyperlink url-{url}")
+
             except Exception as e:
-                messagebox.showerror("Error", f"Search failed: {str(e)}")
+                if "429" in str(e):
+                    self.image_text.insert(tk.END, "\nUsing alternative medical resources:\n")
+                    default_urls = [
+                        "https://www.diabetes.org/",
+                        "https://www.niddk.nih.gov/health-information/diabetes",
+                        "https://www.who.int/health-topics/diabetes"
+                    ]
+                    for i, url in enumerate(default_urls, 1):
+                        self.image_text.insert(tk.END, f"{i}. ", "normal")
+                        self.image_text.insert(tk.END, url + "\n", f"hyperlink url-{url}")
+                else:
+                    messagebox.showerror("Error", f"Search failed: {str(e)}")
                 
     def predict_diabetes(self):
         try:
