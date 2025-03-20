@@ -176,105 +176,107 @@ class ImageProcessor:
         return text.strip()
 
 
-# class InformationFetcher:
-#     def __init__(self):
-#         return
+class InformationFetcher:
+    def __init__(self):
+        return
     
-#     # def get_wikipedia_summary(self, query):
-#         # ... (same as original code) ...
+    # def get_wikipedia_summary(self, query):
+        # ... (same as original code) ...
     
-#     # def google_search(self, query, num_results=3):
-#     #     """
-#     #     Performs a Google search.
+    # def google_search(self, query, num_results=3):
+    #     """
+    #     Performs a Google search.
 
-#     #     Args:
-#     #         query (str): Search term.
-#     #         num_results (int): Number of search results.
+    #     Args:
+    #         query (str): Search term.
+    #         num_results (int): Number of search results.
 
-#     #     Returns:
-#     #         list: List of top search result links.
-#     #     """
-#     #     return list(search(query, num=num_results))
+    #     Returns:
+    #         list: List of top search result links.
+    #     """
+    #     return list(search(query, num=num_results))
     
-#     def google_search(self, query, num_results=3):
-#         try:
-#             search_results = []
-#             for result in search(query, num_results=3):
-#                 search_results.append(result)
-#             return search_results
-#         except Exception as e:
-#             print(f"Error performing Google search: {str(e)}")
-#             return []
-
-# class InformationFetcher:
-#     def __init__(self):
-#         self.search_delay = 2
-        
-#     def google_search(self, query):
-#         try:
-#             # Clean the query
-#             cleaned_query = " ".join(query.split())
-            
-#             # Perform search with correct parameters
-#             results = list(search(
-#                 query=cleaned_query,
-#                 num_results=3,
-#                 lang="en"
-#             ))
-            
-#             # Add delay between searches
-#             time.sleep(self.search_delay)
-            
-#             return results
-            
-#         except Exception as e:
-#             print(f"Search error: {e}")
-#             return []
+    def google_search(self, query, num_results=3):
+        try:
+            search_results = []
+            for result in search(query, num_results=3):
+                search_results.append(result)
+            return search_results
+        except Exception as e:
+            print(f"Error performing Google search: {str(e)}")
+            return []
 
 class InformationFetcher:
     def __init__(self):
-        self.search_delay = 3  # Increased delay between searches
-        self.last_search_time = 0
-        self.user_agents = [
-            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-            'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:89.0) Gecko/20100101 Firefox/89.0',
-            'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.1.1 Safari/605.1.15'
-        ]
-
+        self.search_delay = 2
+        
     def google_search(self, query):
         try:
-            # Ensure minimum delay between searches
-            current_time = time.time()
-            time_since_last = current_time - self.last_search_time
-            if time_since_last < self.search_delay:
-                time.sleep(self.search_delay - time_since_last)
-             # Clean the query
+            # Clean the query
             cleaned_query = " ".join(query.split())
-            cleaned_query = cleaned_query.replace("'", "").replace('"', '')
-
-            # Perform search with rate limiting
-            results = []
-            headers = {'User-Agent': random.choice(self.user_agents)}
-
-            for url in search(
-                cleaned_query,
+            
+            # Perform search with correct parameters
+            results = list(search(
+                query=cleaned_query,
                 num_results=3,
-                lang="en",
-                advanced=True,
-                sleep_interval=self.search_delay,
-                user_agent=headers['User-Agent']
-            ):
-                results.append(url)
-                time.sleep(1)  # Add delay between results
-
-            self.last_search_time = time.time()
+                lang="en"
+            ))
+            
+            # Add delay between searches
+            time.sleep(self.search_delay)
+            
             return results
-
+            
         except Exception as e:
             print(f"Search error: {e}")
-            # Return some default medical resources if search fails
-            return [
-                "https://www.diabetes.org/",
-                "https://www.niddk.nih.gov/health-information/diabetes",
-                "https://www.who.int/health-topics/diabetes"
-            ]   
+            return []
+
+# 
+
+# class InformationFetcher:
+#     def __init__(self):
+#         self.search_delay = 3
+#         self.last_search_time = 0
+
+#     def google_search(self, query):
+#         try:
+#             # Ensure minimum delay between searches
+#             current_time = time.time()
+#             time_since_last = current_time - self.last_search_time
+#             if time_since_last < self.search_delay:
+#                 time.sleep(self.search_delay - time_since_last)
+
+#             # Clean the query
+#             cleaned_query = " ".join(query.split())
+#             cleaned_query = cleaned_query.replace("'", "").replace('"', '')
+
+#             # Perform search with rate limiting
+#             results = []
+#             try:
+#                 for url in search(
+#                     cleaned_query,
+#                     num_results=3,
+#                     lang="en",
+#                     pause=self.search_delay
+#                 ):
+#                     results.append(url)
+#                     time.sleep(1)  # Add delay between results
+#             except Exception:
+#                 # Return default medical resources if search fails
+#                 return [
+#                     "https://www.diabetes.org/",
+#                     "https://www.niddk.nih.gov/health-information/diabetes",
+#                     "https://www.who.int/health-topics/diabetes"
+#                 ]
+
+#             self.last_search_time = time.time()
+#             return results
+
+#         except Exception as e:
+#             print(f"Search error: {e}")
+#             # Return default medical resources
+#             return [
+#                 "https://www.diabetes.org/",
+#                 "https://www.niddk.nih.gov/health-information/diabetes",
+#                 "https://www.who.int/health-topics/diabetes"
+#             ]
