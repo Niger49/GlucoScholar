@@ -13,6 +13,8 @@ from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, Tabl
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib import colors
 from reportlab.lib.units import inch
+import sqlite3
+from datetime import datetime
 
 
 
@@ -61,6 +63,56 @@ class DiabetesPredictorApp:
         self.create_image_tab()
         self.create_predict_tab()
         self.create_medical_tab()
+        
+        # Database initialization
+        self.conn = sqlite3.connect('diabetes_predictions.db')
+        self.create_prediction_table()
+        
+        # Add this to handle database closure on exit
+        self.root.protocol("WM_DELETE_WINDOW", self.on_close)
+    
+    def create_prediction_table(self):
+        cursor = self.conn.cursor()
+        cursor.execute('''CREATE TABLE IF NOT EXISTS predictions
+                        (id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        gender TEXT,
+                        age REAL,
+                        hypertension INTEGER,
+                        heart_disease INTEGER,
+                        smoking_history TEXT,
+                        bmi REAL,
+                        HbA1c_level REAL,
+                        blood_glucose_level REAL,
+                        prediction_result TEXT,
+                        timestamp DATETIME)''')
+        self.conn.commit()
+
+    def on_close(self):
+        """Handle database connection closure when app exits"""
+        self.conn.close()
+        self.root.destroy()
+        
+    def save_prediction(self, input_data, prediction_result):
+        try:
+            cursor = self.conn.cursor()
+            cursor.execute('''INSERT INTO predictions 
+                            (gender, age, hypertension, heart_disease, smoking_history,
+                            bmi, HbA1c_level, blood_glucose_level, prediction_result, timestamp)
+                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''',
+                        (input_data['gender'],
+                            input_data['age'],
+                            input_data['hypertension'],
+                            input_data['heart_disease'],
+                            input_data['smoking_history'],
+                            input_data['bmi'],
+                            input_data['HbA1c_level'],
+                            input_data['blood_glucose_level'],
+                            prediction_result,
+                            datetime.now().strftime('%Y-%m-%d %H:%M:%S')))
+            self.conn.commit()
+        except sqlite3.Error as e:
+            messagebox.showerror("Database Error", f"Failed to save prediction: {str(e)}")
+
         
     def _create_frames(self):
         # Create and style frames
@@ -395,6 +447,15 @@ class DiabetesPredictorApp:
             prediction = self.radFor.model.predict(df)
             result = "Diabetic" if prediction[0] == 1 else "Not Diabetic"
             self.result_label.config(text=f"Prediction Result: {result}", foreground='red' if prediction[0] else 'green')
+            
+            prediction = self.radFor.model.predict(df)
+            result = "Diabetic" if prediction[0] == 1 else "Not Diabetic"
+            self.result_label.config(text=f"Prediction Result: {result}", 
+                                foreground='red' if prediction[0] else 'green')
+            
+            # Save to database
+            self.save_prediction(input_data, result)
+            
             
             # Update medical recommendations
             self.advice_text.delete(1.0, tk.END)

@@ -8,6 +8,13 @@ import matplotlib.pyplot as plt
 import webbrowser
 import time
 from tkinter import scrolledtext
+from reportlab.lib.pagesizes import letter
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib import colors
+from reportlab.lib.units import inch
+
+
 
 # ... (keep all existing imports and class definitions the same)
 
@@ -16,6 +23,7 @@ class DiabetesPredictorApp:
         self.root = root
         self.root.title("GlucoScholar Diabetes Predictor")
         self.root.geometry("800x650")
+        
         
         # Configure default font and colors
         self.root.configure(bg='#f0f0f0')
@@ -52,6 +60,7 @@ class DiabetesPredictorApp:
         self.create_dataset_tab()
         self.create_image_tab()
         self.create_predict_tab()
+        self.create_medical_tab()
         
     def _create_frames(self):
         # Create and style frames
@@ -65,6 +74,10 @@ class DiabetesPredictorApp:
         
         # Configure frame style
         self.style.configure('Custom.TFrame', background='#ffffff', borderwidth=2, relief='groove')
+        
+        self.medical_frame = ttk.Frame(self.notebook, style='Custom.TFrame')
+        self.notebook.add(self.medical_frame, text='Medical Support')
+
         
     # ... (keep all existing methods the same until create_dataset_tab)
     
@@ -191,8 +204,23 @@ class DiabetesPredictorApp:
         
         self.result_label = ttk.Label(self.predict_frame, text="", font=('Arial', 16))
         self.result_label.grid(row=9, column=0, columnspan=2, pady=10)
+        
+    def create_medical_tab(self):
+        # Medical advice display
+        self.advice_text = scrolledtext.ScrolledText(self.medical_frame, 
+                                                height=15, width=80,
+                                                wrap=tk.WORD, 
+                                                bg='#ffffff', fg='#2c3e50',
+                                                font=('Arial', 11))
+        self.advice_text.pack(padx=10, pady=10, fill=tk.BOTH, expand=True)
 
-# ... (keep the rest of the code the same)
+        # PDF generation button
+        ttk.Button(self.predict_frame, 
+                text="Generate PDF Report", 
+                command=self.generate_pdf_report,
+                style='Accent.TButton').grid(row=10, column=0, columnspan=2, pady=10)
+    
+
     def load_dataset(self):
         file_path = filedialog.askopenfilename(
             filetypes=[("CSV files", "*.csv"), ("All files", "*.*")]
@@ -368,8 +396,161 @@ class DiabetesPredictorApp:
             result = "Diabetic" if prediction[0] == 1 else "Not Diabetic"
             self.result_label.config(text=f"Prediction Result: {result}", foreground='red' if prediction[0] else 'green')
             
+            # Update medical recommendations
+            self.advice_text.delete(1.0, tk.END)
+            recommendations = self.get_medical_recommendations(prediction[0], input_data)
+            self.advice_text.insert(tk.END, "Personalized Recommendations:\n\n")
+            for rec in recommendations:
+                self.advice_text.insert(tk.END, f"• {rec}\n")
+            
         except Exception as e:
             messagebox.showerror("Error", f"Invalid input: {str(e)}")
+            
+    def create_medical_tab(self):
+        # Medical advice display
+        self.advice_text = scrolledtext.ScrolledText(self.medical_frame, 
+                                                height=15, width=80,
+                                                wrap=tk.WORD, 
+                                                bg='#ffffff', fg='#2c3e50',
+                                                font=('Arial', 11))
+        self.advice_text.pack(padx=10, pady=10, fill=tk.BOTH, expand=True)
+
+        # PDF generation button
+        ttk.Button(self.predict_frame, 
+                text="Generate PDF Report", 
+                command=self.generate_pdf_report,
+                style='Accent.TButton').grid(row=10, column=0, columnspan=2, pady=10)
+        
+    def get_medical_recommendations(self, prediction, inputs):
+        recommendations = []
+        
+        # General recommendations
+        if prediction == 1:
+            recommendations.append("🟥 Medical Alert: Predictive results indicate diabetes risk. Please consult a healthcare professional immediately.")
+            recommendations.append("🔔 Recommendation: Schedule fasting blood glucose and HbA1c tests with your doctor.")
+        else:
+            recommendations.append("🟩 Predictive results show no diabetes risk. Maintain regular checkups.")
+        
+        # BMI-based recommendations
+        bmi = inputs.get('bmi', 0)
+        if bmi >= 25:
+            recommendations.append("⚖️ Weight Management: Aim for 5-10% weight loss through diet and exercise")
+            recommendations.append("🏃 Exercise: 150 mins/week moderate activity (brisk walking, cycling)")
+        elif bmi < 18.5:
+            recommendations.append("⚖️ Nutrition: Consult dietitian for healthy weight gain strategies")
+        
+        # Blood glucose specific
+        glucose = inputs.get('blood_glucose_level', 0)
+        if glucose > 140:
+            recommendations.append("🍬 Blood Sugar Management: Monitor fasting and post-meal glucose levels regularly")
+        
+        # Smoking recommendations
+        if inputs.get('smoking_history', '') in ['current', 'former']:
+            recommendations.append("🚭 Smoking Cessation: Consider nicotine replacement therapy or counseling")
+        
+        # Hypertension management
+        if inputs.get('hypertension', 0) == 1:
+            recommendations.append("❤️ Blood Pressure: Maintain sodium intake <2g/day and monitor BP weekly")
+        
+        return recommendations
+
+        
+    def generate_pdf_report(self):
+        try:
+            # Collect patient data
+            patient_data = {field: self.entries[field].get() for field in self.entries}
+            prediction = "Diabetic" if "Diabetic" in self.result_label.cget("text") else "Non-Diabetic"
+            
+            # Get medical recommendations
+            recommendations = self.get_medical_recommendations(
+                prediction, 
+                {k: float(v) if v.replace('.','',1).isdigit() else v 
+                for k,v in patient_data.items()}
+            )
+            
+            # Generate automatic filename with timestamp
+            timestamp = time.strftime("%Y%m%d-%H%M%S")
+            filename = f"Diabetes_Report_{timestamp}.pdf"
+            desktop_path = os.path.join(os.path.expanduser('~'), 'Desktop', filename)
+            
+            # Create PDF
+            # file_path = filedialog.asksaveasfilename(
+            #     defaultextension=".pdf",
+            #     filetypes=[("PDF files", "*.pdf")],
+            #     title="Save Medical Report"
+            # )
+            # if not file_path:
+            #     return
+
+            # doc = SimpleDocTemplate(file_path, pagesize=letter)
+            doc = SimpleDocTemplate(desktop_path, pagesize=letter)
+            styles = getSampleStyleSheet()
+            elements = []
+            
+            # Title
+            title_style = ParagraphStyle(
+                'Title',
+                parent=styles['Heading1'],
+                alignment=1,
+                spaceAfter=14
+            )
+            elements.append(Paragraph("Diabetes Risk Assessment Report", title_style))
+            
+            # Patient Information Table
+            patient_table = [
+                ["Patient Information", "Value"],
+                ["Age", patient_data['age']],
+                ["Gender", patient_data['gender']],
+                ["BMI", patient_data['bmi']],
+                ["HbA1c Level", patient_data['HbA1c_level']],
+                ["Blood Glucose", patient_data['blood_glucose_level']],
+                ["Prediction Result", prediction]
+            ]
+            
+            table = Table(patient_table)
+            table.setStyle(TableStyle([
+                ('BACKGROUND', (0,0), (-1,0), colors.lightgrey),
+                ('TEXTCOLOR', (0,0), (-1,0), colors.black),
+                ('ALIGN', (0,0), (-1,-1), 'CENTER'),
+                ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
+                ('BOTTOMPADDING', (0,0), (-1,0), 12),
+                ('BACKGROUND', (0,1), (-1,-1), colors.beige),
+                ('GRID', (0,0), (-1,-1), 1, colors.black)
+            ]))
+            elements.append(table)
+            elements.append(Spacer(1, 0.3*inch))
+            
+            # Medical Recommendations
+            elements.append(Paragraph("Medical Recommendations:", styles['Heading2']))
+            for rec in recommendations:
+                elements.append(Paragraph(f"• {rec}", styles['BodyText']))
+                elements.append(Spacer(1, 0.1*inch))
+            
+            # Disclaimer
+            disclaimer = """<font color=red><i>Note: This automated report is not a substitute for professional medical advice. 
+                        Always consult a qualified healthcare provider for diagnosis and treatment.</i></font>"""
+            elements.append(Paragraph(disclaimer, styles['Italic']))
+            
+            doc.build(elements)
+        #     messagebox.showinfo("Success", f"PDF report saved successfully at:\n{file_path}")
+            
+        # except Exception as e:
+        #     messagebox.showerror("Error", f"Failed to generate PDF: {str(e)}")
+        
+         # Open PDF in default browser
+            webbrowser.open_new_tab(f"file://{desktop_path}")
+            
+            # Show success message with path
+            # messagebox.showinfo(
+            #     "Report Generated", 
+            #     f"PDF report automatically saved to:\n{desktop_path}\n"
+            #     "Opened in your default browser."
+            # )
+            
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to generate PDF: {str(e)}")
+
+
 
 if __name__ == "__main__":
     root = tk.Tk()
