@@ -1,4 +1,4 @@
-﻿# GlocoScholar
+﻿# GlucoScholar
  ## **GlucoScholar 🩸🤖**
 
 **🏥 Diabetes Prediction & Analysis Tool**
