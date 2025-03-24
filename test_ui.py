@@ -15,16 +15,16 @@ from reportlab.lib import colors
 from reportlab.lib.units import inch
 import sqlite3
 from datetime import datetime
+from tkcalendar import DateEntry 
+import csv
 
 
-
-# ... (keep all existing imports and class definitions the same)
 
 class DiabetesPredictorApp:
     def __init__(self, root):
         self.root = root
         self.root.title("GlucoScholar Diabetes Predictor")
-        self.root.geometry("800x650")
+        self.root.geometry("1200x650")
         
         
         # Configure default font and colors
@@ -63,6 +63,7 @@ class DiabetesPredictorApp:
         self.create_image_tab()
         self.create_predict_tab()
         self.create_medical_tab()
+        self.create_report_tab() 
         
         # Database initialization
         self.conn = sqlite3.connect('diabetes_predictions.db')
@@ -70,6 +71,13 @@ class DiabetesPredictorApp:
         
         # Add this to handle database closure on exit
         self.root.protocol("WM_DELETE_WINDOW", self.on_close)
+        
+        # for custom csv file generation using a particular time period
+        # self.create_dataset_tab()
+        # self.create_image_tab()
+        # self.create_predict_tab()
+        # self.create_medical_tab()
+        # self.create_report_tab() 
     
     def create_prediction_table(self):
         cursor = self.conn.cursor()
@@ -129,9 +137,11 @@ class DiabetesPredictorApp:
         
         self.medical_frame = ttk.Frame(self.notebook, style='Custom.TFrame')
         self.notebook.add(self.medical_frame, text='Medical Support')
+        
+        self.report_frame = ttk.Frame(self.notebook, style='Custom.TFrame')
+        # self.notebook.add(self.report_frame, text='Generate Reports')
 
         
-    # ... (keep all existing methods the same until create_dataset_tab)
     
     def create_dataset_tab(self):
         # Dataset upload section
@@ -146,6 +156,32 @@ class DiabetesPredictorApp:
                                   bg='#ffffff', fg='#2c3e50',
                                   font=('Arial', 11))
         self.results_text.grid(row=1, column=0, columnspan=3, padx=10, pady=5)
+    
+    
+    def create_report_tab(self):
+        # Create new tab for reports
+        self.report_frame = ttk.Frame(self.notebook, style='Custom.TFrame')
+        self.notebook.add(self.report_frame, text='Generate Reports')
+        
+        # Date selection
+        ttk.Label(self.report_frame, text="Start Date:", background='#ffffff').grid(row=0, column=0, padx=10, pady=10)
+        self.start_date = DateEntry(self.report_frame)
+        self.start_date.grid(row=0, column=1, padx=10, pady=10)
+        
+        ttk.Label(self.report_frame, text="End Date:", background='#ffffff').grid(row=1, column=0, padx=10, pady=10)
+        self.end_date = DateEntry(self.report_frame)
+        self.end_date.grid(row=1, column=1, padx=10, pady=10)
+        
+        # Generate report button
+        ttk.Button(self.report_frame, 
+                text="Generate CSV Report", 
+                command=self.generate_csv_report,
+                style='Accent.TButton').grid(row=2, column=0, columnspan=2, pady=10)
+        
+        # Status label
+        self.report_status = ttk.Label(self.report_frame, text="", foreground='green')
+        self.report_status.grid(row=3, column=0, columnspan=2)
+
         
     def create_image_tab(self):
         # Image upload section
@@ -185,39 +221,95 @@ class DiabetesPredictorApp:
                 break
        
     
-    def search_online(self):
-        query = self.image_text.get("1.0", "end-1c").split('\n')[-1]
-        if query:
-            try:
-                # Show searching status
-                self.image_text.insert(tk.END, "\n\nSearching...\n")
-                self.root.update()  # Update UI to show status
+    # def search_online(self):
+    #     query = self.image_text.get("1.0", "end-1c").split('\n')[-1]
+    #     if query:
+    #         try:
+    #             # Show searching status
+    #             self.image_text.insert(tk.END, "\n\nSearching...\n")
+    #             self.root.update()  # Update UI to show status
                 
-                # Add delay before search
-                time.sleep(2)  # 2-second delay
+    #             # Add delay before search
+    #             time.sleep(2)  # 2-second delay
                 
-                results = self.info_fetcher.google_search(query)
+    #             results = self.info_fetcher.google_search(query)
                 
-                # Remove "Searching..." text
-                self.image_text.delete("end-2c linestart", "end-1c lineend")
+    #             # Remove "Searching..." text
+    #             self.image_text.delete("end-2c linestart", "end-1c lineend")
                 
-                if results:
-                    self.image_text.insert(tk.END, "\nSearch Results:\n")
-                    # Insert each URL as a clickable link
-                    for i, url in enumerate(results[:3], 1):
-                        self.image_text.insert(tk.END, f"{i}. ", "normal")
-                        self.image_text.insert(tk.END, url + "\n", f"hyperlink url-{url}")
-                else:
-                    self.image_text.insert(tk.END, "\nNo results found or rate limit reached. Please try again later.\n")
+    #             if results:
+    #                 self.image_text.insert(tk.END, "\nSearch Results:\n")
+    #                 # Insert each URL as a clickable link
+    #                 for i, url in enumerate(results[:3], 1):
+    #                     self.image_text.insert(tk.END, f"{i}. ", "normal")
+    #                     self.image_text.insert(tk.END, url + "\n", f"hyperlink url-{url}")
+    #             else:
+    #                 self.image_text.insert(tk.END, "\nNo results found or rate limit reached. Please try again later.\n")
                     
-            except Exception as e:
-                if "429" in str(e):
-                    messagebox.showwarning(
-                        "Rate Limit", 
-                        "Search rate limit reached. Please wait a few minutes before trying again."
-                    )
-                else:
-                    messagebox.showerror("Error", f"Search failed: {str(e)}")
+    #         except Exception as e:
+    #             if "429" in str(e):
+    #                 messagebox.showwarning(
+    #                     "Rate Limit", 
+    #                     "Search rate limit reached. Please wait a few minutes before trying again."
+    #                 )
+    #             else:
+    #                 messagebox.showerror("Error", f"Search failed: {str(e)}")
+    
+    # def search_online(self):
+    #     # Get full text content without splitting
+    #     query = self.image_text.get("1.0", "end-1c").strip()
+    #     print(query)
+        
+    #     if query:
+    #         try:
+    #             # Show searching status
+    #             self.image_text.insert(tk.END, "\n\nSearching...\n")
+    #             self.root.update()
+
+    #             # Add initial delay
+    #             time.sleep(2)
+
+    #             # Get full set of results
+    #             results = self.info_fetcher.google_search(query)
+                
+    #             # Clear searching status
+    #             self.image_text.delete("end-2c linestart", "end-1c lineend")
+                
+    #             print(results)
+    #             print(len(results))
+                
+    #             if results and len(results) > 0:
+    #                 self.image_text.insert(tk.END, "\nSearch Results:\n")
+    #                 # Make sure we get all results (up to 3)
+    #                 for i, url in enumerate(results[:3], 1):
+    #                     self.image_text.insert(tk.END, f"{i}. ", "normal")
+    #                     self.image_text.insert(tk.END, url + "\n", f"hyperlink url-{url}")
+    #                     time.sleep(0.5)  # Small delay between displaying results
+    #             else:
+    #                 self.image_text.insert(tk.END, "\nSupporting medical documentation:\n")
+    #                 default_urls = [
+    #                     "https://www.diabetes.org/",
+    #                     "https://www.niddk.nih.gov/health-information/diabetes",
+    #                     "https://www.who.int/health-topics/diabetes"
+    #                 ]
+    #                 for i, url in enumerate(default_urls, 1):
+    #                     self.image_text.insert(tk.END, f"{i}. ", "normal")
+    #                     self.image_text.insert(tk.END, url + "\n", f"hyperlink url-{url}")
+
+    #         except Exception as e:
+    #             if "429" in str(e):
+    #                 self.image_text.insert(tk.END, "\nSearch rate limit reached. Using alternative resources:\n")
+    #                 default_urls = [
+    #                     "https://www.diabetes.org/",
+    #                     "https://www.niddk.nih.gov/health-information/diabetes",
+    #                     "https://www.who.int/health-topics/diabetes"
+    #                 ]
+    #                 for i, url in enumerate(default_urls, 1):
+    #                     self.image_text.insert(tk.END, f"{i}. ", "normal")
+    #                     self.image_text.insert(tk.END, url + "\n", f"hyperlink url-{url}")
+    #             else:
+    #                 messagebox.showerror("Error", f"Search failed: {str(e)}")
+    
                 
     def create_predict_tab(self):
         # Style input fields
@@ -366,11 +458,13 @@ class DiabetesPredictorApp:
                 extracted_text = self.image_processor.extract_text(self.image_path.get())
                 self.image_text.delete(1.0, tk.END)
                 self.image_text.insert(tk.END, "Extracted Text:\n" + extracted_text)
+                print("Extracted Text: ", self.image_text.get("1.0", "end-1c"))
             except Exception as e:
                 messagebox.showerror("Error", f"Error processing image: {str(e)}")
                 
     def search_online(self):
-        query = self.image_text.get("1.0", "end-1c").split('\n')[-1]
+        query = self.image_text.get("1.0", "end-1c")
+        print("🔖 Text for search: ", query)
         if query:
             try:
                 # Show searching status
@@ -380,7 +474,7 @@ class DiabetesPredictorApp:
                 # Add initial delay
                 time.sleep(2)
 
-                results = self.info_fetcher.google_search(query)
+                results = self.info_fetcher.google_search(query=query)
                 
                 # Clear searching status
                 self.image_text.delete("end-2c linestart", "end-1c lineend")
@@ -610,6 +704,51 @@ class DiabetesPredictorApp:
             
         except Exception as e:
             messagebox.showerror("Error", f"Failed to generate PDF: {str(e)}")
+            
+    def generate_csv_report(self):
+        try:
+            # Get selected dates
+            start = self.start_date.get_date()
+            end = self.end_date.get_date()
+            
+            # Convert to SQLite compatible format
+            start_str = start.strftime('%Y-%m-%d')
+            end_str = end.strftime('%Y-%m-%d')
+            
+            # Query database
+            cursor = self.conn.cursor()
+            cursor.execute('''SELECT * FROM predictions 
+                            WHERE date(timestamp) BETWEEN ? AND ?''', 
+                        (start_str, end_str))
+            data = cursor.fetchall()
+            
+            if not data:
+                self.report_status.config(text="No records found in selected period", foreground='red')
+                return
+                
+            # CSV headers
+            columns = ['ID', 'Gender', 'Age', 'Hypertension', 'Heart Disease',
+                    'Smoking History', 'BMI', 'HbA1c Level', 'Blood Glucose Level',
+                    'Prediction Result', 'Timestamp']
+            
+            # Generate filename with dates
+            filename = f"diabetes_report_{start_str}_to_{end_str}.csv"
+            file_path = os.path.join(os.getcwd(), filename)  # Current directory
+
+            
+            # Write to CSV
+            with open(file_path, 'w', newline='') as f:
+                writer = csv.writer(f)
+                writer.writerow(columns)
+                writer.writerows(data)
+                
+            # Show success message
+            self.report_status.config(text=f"Report saved to: {file_path}", foreground='green')
+            webbrowser.open(file_path)
+            
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to generate report: {str(e)}")
+
 
 
 

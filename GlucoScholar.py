@@ -205,33 +205,36 @@ class InformationFetcher:
         except Exception as e:
             print(f"Error performing Google search: {str(e)}")
             return []
-
-class InformationFetcher:
-    def __init__(self):
-        self.search_delay = 2
         
-    def google_search(self, query):
-        try:
-            # Clean the query
-            cleaned_query = " ".join(query.split())
+        
+# # Main search code
+# class InformationFetcher:
+#     def __init__(self):
+#         self.search_delay = 2
+#         # self.last_search_time = 0
+        
+#     def google_search(self, query):
+#         try:
+#             # Clean the query
+#             cleaned_query = " ".join(query.split())
             
-            # Perform search with correct parameters
-            results = list(search(
-                query=cleaned_query,
-                num_results=3,
-                lang="en"
-            ))
+#             # Perform search with correct parameters
+#             results = list(search(
+#                 query=cleaned_query,
+#                 num_results=3,
+#                 lang="en"
+#             ))
             
-            # Add delay between searches
-            time.sleep(self.search_delay)
+#             # Add delay between searches
+#             time.sleep(self.search_delay)
             
-            return results
+#             return results
             
-        except Exception as e:
-            print(f"Search error: {e}")
-            return []
+#         except Exception as e:
+#             print(f"Search error: {e}")
+#             return []
 
-# 
+
 
 # class InformationFetcher:
 #     def __init__(self):
@@ -280,3 +283,29 @@ class InformationFetcher:
 #                 "https://www.niddk.nih.gov/health-information/diabetes",
 #                 "https://www.who.int/health-topics/diabetes"
 #             ]
+
+class InformationFetcher:
+    def __init__(self):
+        self.search_delay = 2
+        
+    def google_search(self, query):
+        try:
+            print(f"Performing Google search for: {query}")
+            # Clean the query
+            cleaned_query = query.replace("\n", " ").strip()
+            
+            # Perform search with correct parameters
+            results = list(search(
+                term=cleaned_query,
+                num_results=3,
+                lang="en"
+            ))
+            
+            # Add delay between searches
+            time.sleep(self.search_delay)
+            
+            return results
+            
+        except Exception as e:
+            print(f"Search error: {e}")
+            return []
