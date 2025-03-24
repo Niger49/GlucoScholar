@@ -3,7 +3,8 @@ from tkinter import ttk, filedialog, messagebox
 from PIL import Image, ImageTk
 import os
 import pandas as pd
-from GlucoScholar import randomForest, ImageProcessor, InformationFetcher
+# from GlucoScholar import randomForest, ImageProcessor, InformationFetcher
+from test_main import randomForest, ImageProcessor, InformationFetcher
 import matplotlib.pyplot as plt
 import webbrowser
 import time
@@ -462,6 +463,53 @@ class DiabetesPredictorApp:
             except Exception as e:
                 messagebox.showerror("Error", f"Error processing image: {str(e)}")
                 
+    # def search_online(self):
+    #     query = self.image_text.get("1.0", "end-1c")
+    #     print("🔖 Text for search: ", query)
+    #     if query:
+    #         try:
+    #             # Show searching status
+    #             self.image_text.insert(tk.END, "\n\nSearching...\n")
+    #             self.root.update()
+
+    #             # Add initial delay
+    #             time.sleep(2)
+
+    #             results = self.info_fetcher.google_search(query=query)
+                
+    #             # Clear searching status
+    #             self.image_text.delete("end-2c linestart", "end-1c lineend")
+                
+    #             if results:
+    #                 self.image_text.insert(tk.END, "\nSearch Results:\n")
+    #                 for i, url in enumerate(results, 1):
+    #                     self.image_text.insert(tk.END, f"{i}. ", "normal")
+    #                     self.image_text.insert(tk.END, url + "\n", f"hyperlink url-{url}")
+    #             else:
+    #                 self.image_text.insert(tk.END, "\nUsing alternative medical resources:\n")
+    #                 default_urls = [
+    #                     "https://www.diabetes.org/",
+    #                     "https://www.niddk.nih.gov/health-information/diabetes",
+    #                     "https://www.who.int/health-topics/diabetes"
+    #                 ]
+    #                 for i, url in enumerate(default_urls, 1):
+    #                     self.image_text.insert(tk.END, f"{i}. ", "normal")
+    #                     self.image_text.insert(tk.END, url + "\n", f"hyperlink url-{url}")
+
+    #         except Exception as e:
+    #             if "429" in str(e):
+    #                 self.image_text.insert(tk.END, "\nUsing alternative medical resources:\n")
+    #                 default_urls = [
+    #                     "https://www.diabetes.org/",
+    #                     "https://www.niddk.nih.gov/health-information/diabetes",
+    #                     "https://www.who.int/health-topics/diabetes"
+    #                 ]
+    #                 for i, url in enumerate(default_urls, 1):
+    #                     self.image_text.insert(tk.END, f"{i}. ", "normal")
+    #                     self.image_text.insert(tk.END, url + "\n", f"hyperlink url-{url}")
+    #             else:
+    #                 messagebox.showerror("Error", f"Search failed: {str(e)}")
+    
     def search_online(self):
         query = self.image_text.get("1.0", "end-1c")
         print("🔖 Text for search: ", query)
@@ -474,16 +522,22 @@ class DiabetesPredictorApp:
                 # Add initial delay
                 time.sleep(2)
 
-                results = self.info_fetcher.google_search(query=query)
+                results = self.info_fetcher.google_search(query)
                 
                 # Clear searching status
                 self.image_text.delete("end-2c linestart", "end-1c lineend")
                 
                 if results:
                     self.image_text.insert(tk.END, "\nSearch Results:\n")
-                    for i, url in enumerate(results, 1):
+                    for i, url in enumerate(results[:5], 1):
+                        # Enhanced URL validation and completion
+                        if not url.startswith(('http://', 'https://')):
+                            url = f"https://{url}"
+                        if 'google.com' in url:
+                            continue  # Skip Google links entirely
                         self.image_text.insert(tk.END, f"{i}. ", "normal")
                         self.image_text.insert(tk.END, url + "\n", f"hyperlink url-{url}")
+
                 else:
                     self.image_text.insert(tk.END, "\nUsing alternative medical resources:\n")
                     default_urls = [
@@ -614,7 +668,9 @@ class DiabetesPredictorApp:
         try:
             # Collect patient data
             patient_data = {field: self.entries[field].get() for field in self.entries}
-            prediction = "Diabetic" if "Diabetic" in self.result_label.cget("text") else "Non-Diabetic"
+            # prediction = "Diabetic" if "Diabetic" in self.result_label.cget("text") else "Not Diabetic"
+            result_text = self.result_label.cget("text")
+            prediction = result_text.split(": ")[-1]
             
             # Get medical recommendations
             recommendations = self.get_medical_recommendations(
@@ -717,8 +773,11 @@ class DiabetesPredictorApp:
             
             # Query database
             cursor = self.conn.cursor()
-            cursor.execute('''SELECT * FROM predictions 
-                            WHERE date(timestamp) BETWEEN ? AND ?''', 
+            cursor.execute('''SELECT 
+                           id, gender, age, hypertension, heart_disease, smoking_history,
+                           bmi, HbA1c_level, blood_glucose_level, prediction_result
+                           FROM predictions 
+                        WHERE date(timestamp) BETWEEN ? AND ?''', 
                         (start_str, end_str))
             data = cursor.fetchall()
             
@@ -729,7 +788,7 @@ class DiabetesPredictorApp:
             # CSV headers
             columns = ['ID', 'Gender', 'Age', 'Hypertension', 'Heart Disease',
                     'Smoking History', 'BMI', 'HbA1c Level', 'Blood Glucose Level',
-                    'Prediction Result', 'Timestamp']
+                    'Prediction Result']
             
             # Generate filename with dates
             filename = f"diabetes_report_{start_str}_to_{end_str}.csv"

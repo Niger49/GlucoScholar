@@ -23,7 +23,7 @@ from googlesearch import search
 import requests
 from bs4 import BeautifulSoup
 import random
-
+import re
 
 class randomForest:
     """ Columns
@@ -176,35 +176,35 @@ class ImageProcessor:
         return text.strip()
 
 
-class InformationFetcher:
-    def __init__(self):
-        return
+# class InformationFetcher:
+#     def __init__(self):
+#         return
     
-    # def get_wikipedia_summary(self, query):
-        # ... (same as original code) ...
+#     # def get_wikipedia_summary(self, query):
+#         # ... (same as original code) ...
     
-    # def google_search(self, query, num_results=3):
-    #     """
-    #     Performs a Google search.
+#     # def google_search(self, query, num_results=3):
+#     #     """
+#     #     Performs a Google search.
 
-    #     Args:
-    #         query (str): Search term.
-    #         num_results (int): Number of search results.
+#     #     Args:
+#     #         query (str): Search term.
+#     #         num_results (int): Number of search results.
 
-    #     Returns:
-    #         list: List of top search result links.
-    #     """
-    #     return list(search(query, num=num_results))
+#     #     Returns:
+#     #         list: List of top search result links.
+#     #     """
+#     #     return list(search(query, num=num_results))
     
-    def google_search(self, query, num_results=3):
-        try:
-            search_results = []
-            for result in search(query, num_results=3):
-                search_results.append(result)
-            return search_results
-        except Exception as e:
-            print(f"Error performing Google search: {str(e)}")
-            return []
+#     def google_search(self, query, num_results=3):
+#         try:
+#             search_results = []
+#             for result in search(query, num_results=3):
+#                 search_results.append(result)
+#             return search_results
+#         except Exception as e:
+#             print(f"Error performing Google search: {str(e)}")
+#             return []
         
         
 # # Main search code
@@ -235,77 +235,116 @@ class InformationFetcher:
 #             return []
 
 
-
 # class InformationFetcher:
-#     def __init__(self):
-#         self.search_delay = 3
-#         self.last_search_time = 0
-
-#     def google_search(self, query):
-#         try:
-#             # Ensure minimum delay between searches
-#             current_time = time.time()
-#             time_since_last = current_time - self.last_search_time
-#             if time_since_last < self.search_delay:
-#                 time.sleep(self.search_delay - time_since_last)
-
-#             # Clean the query
-#             cleaned_query = " ".join(query.split())
-#             cleaned_query = cleaned_query.replace("'", "").replace('"', '')
-
-#             # Perform search with rate limiting
-#             results = []
-#             try:
-#                 for url in search(
-#                     cleaned_query,
-#                     num_results=3,
-#                     lang="en",
-#                     pause=self.search_delay
-#                 ):
-#                     results.append(url)
-#                     time.sleep(1)  # Add delay between results
-#             except Exception:
-#                 # Return default medical resources if search fails
-#                 return [
-#                     "https://www.diabetes.org/",
-#                     "https://www.niddk.nih.gov/health-information/diabetes",
-#                     "https://www.who.int/health-topics/diabetes"
-#                 ]
-
-#             self.last_search_time = time.time()
-#             return results
-
-#         except Exception as e:
-#             print(f"Search error: {e}")
-#             # Return default medical resources
-#             return [
-#                 "https://www.diabetes.org/",
-#                 "https://www.niddk.nih.gov/health-information/diabetes",
-#                 "https://www.who.int/health-topics/diabetes"
-#             ]
+    # def __init__(self):
+    #     self.search_delay = 2
+        
+    # def google_search(self, query):
+    #     try:
+    #         print(f"Performing Google search for: {query}")
+    #         # Clean the query
+    #         cleaned_query = query.replace("\n", " ").strip()
+            
+    #         # Perform search with correct parameters
+    #         results = list(search(
+    #             term=cleaned_query,
+    #             num_results=3,
+    #             lang="en"
+    #         ))
+            
+    #         # Add delay between searches
+    #         time.sleep(self.search_delay)
+            
+    #         return results
+            
+    #     except Exception as e:
+    #         print(f"Search error: {e}")
+    #         return []
 
 class InformationFetcher:
     def __init__(self):
-        self.search_delay = 2
+        self.search_delay = 3
+        self.last_search_time = 0
+
+    def clean_query(self, text):
+        # Enhanced keyword extraction
+        keywords = []
+        medical_terms = ['diabetes', 'glucose', 'hba1c', 'blood sugar', 
+                       'insulin', 'hyperglycemia']
         
-    def google_search(self, query):
+        text_lower = text.lower()
+        for term in medical_terms:
+            if term in text_lower:
+                keywords.append(term)
+        
+        if not keywords:
+            keywords = text.split()[:5]
+            
+        search_query = " ".join(keywords) + " site:.org OR site:.gov"
+        return search_query.strip()
+
+
+    def google_search(self, text):
         try:
-            print(f"Performing Google search for: {query}")
-            # Clean the query
-            cleaned_query = query.replace("\n", " ").strip()
+            # Ensure minimum delay between searches
+            current_time = time.time()
+            time_since_last = current_time - self.last_search_time
+            if time_since_last < self.search_delay:
+                time.sleep(self.search_delay - time_since_last)
+
+            # Clean and prepare search query
+            query = self.clean_query(text)
             
-            # Perform search with correct parameters
-            results = list(search(
-                term=cleaned_query,
-                num_results=3,
-                lang="en"
-            ))
-            
-            # Add delay between searches
-            time.sleep(self.search_delay)
-            
-            return results
-            
+            # Perform search
+            results = []
+            try:
+                for url in search(query, num_results=10):
+                    # Filter and clean URLs
+                    if self.is_valid_url(url):
+                        results.append(url)
+                    if len(results) >= 5:
+                        break
+                    time.sleep(1)
+
+            except Exception as e:
+                print(f"Search failed: {e}")
+                return self.get_default_urls()
+
+            self.last_search_time = time.time()
+            return results if results else self.get_default_urls()
+
         except Exception as e:
             print(f"Search error: {e}")
-            return []
+            return self.get_default_urls()
+
+    def is_valid_url(self, url):
+        # Filter out Google search URLs and verify it's a proper medical resource
+        if any(x in url.lower() for x in [
+            'google.com/search', 
+            'google.com/url', 
+            'google.com/webhp'
+        ]):
+            return False
+            
+        # Check for medical/diabetes related domains
+        valid_domains = [
+            'diabetes.org',
+            'nih.gov',
+            'who.int',
+            'mayoclinic.org',
+            'medlineplus.gov',
+            'webmd.com',
+            'healthline.com',
+            'medicalnewstoday.com',
+            'cdc.gov',
+            'diabetesjournals.org',
+            'pubmed.ncbi.nlm.nih.gov'
+        ]
+        return any(domain in url.lower() for domain in valid_domains)
+
+    def get_default_urls(self):
+        return [
+            "https://www.diabetes.org/diabetes",
+            "https://www.niddk.nih.gov/health-information/diabetes",
+            "https://www.who.int/health-topics/diabetes"
+        ]
