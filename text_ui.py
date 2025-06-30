@@ -832,7 +832,7 @@ class DiabetesPredictorApp:
             # Update medical recommendations
             self.advice_text.delete("0.0", "end")  # CTk syntax
             
-            recommendations = self.get_medical_recommendations(result, input_data)
+            recommendations = self.get_medical_recommendations(prediction[0], input_data)
             self.advice_text.insert("0.0", "\n\nPersonalized Recommendations:\n\n")
             for rec in recommendations:
                 self.advice_text.insert("end", f"• {rec}\n")
@@ -888,7 +888,7 @@ class DiabetesPredictorApp:
         recommendations = []
         
         # General recommendations
-        if prediction == "Diabetic":
+        if prediction == 1:
             recommendations.extend([
                 "🟥 Medical Alert: Predictive results indicate diabetes risk. Please consult a healthcare professional immediately.",
                 "🔔 Recommendation: Schedule fasting blood glucose and HbA1c tests with your doctor."
@@ -936,11 +936,16 @@ class DiabetesPredictorApp:
             # Collect patient data
             patient_data = {field: self.entries[field].get() for field in self.entries}
             result_text = self.result_label.cget("text")
-            prediction = result_text.split(": ")[-1]
             
-            # Get medical recommendations
+            # Extract prediction string (for display)
+            prediction_str = result_text.split(": ")[-1] if ": " in result_text else ""
+            
+            # Convert to integer prediction value (for recommendations)
+            prediction_int = 1 if prediction_str == "Diabetic" else 0
+            
+            # Get medical recommendations using integer value
             recommendations = self.get_medical_recommendations(
-                prediction, 
+                prediction_int,  # Use integer for recommendations
                 {k: float(v) if v.replace('.','',1).isdigit() else v 
                 for k,v in patient_data.items()}
             )
@@ -972,7 +977,7 @@ class DiabetesPredictorApp:
                 ["BMI", patient_data['bmi']],
                 ["HbA1c Level", patient_data['HbA1c_level']],
                 ["Blood Glucose", patient_data['blood_glucose_level']],
-                ["Prediction Result", prediction]
+                ["Prediction Result", prediction_str]  # Use string for display
             ]
             
             table = Table(patient_table)
@@ -1017,6 +1022,7 @@ class DiabetesPredictorApp:
                 message=f"Failed to generate PDF: {str(e)}",
                 icon="cancel"
             )
+
             
     def generate_csv_report(self):
         try:
