@@ -5,3 +5,8 @@ pytesseract
 google
 # wikipedia==1.4.0
 scikit-learn
+customtkinter
+CTkMessagebox
+tkcalendar
+requests
+reportlab

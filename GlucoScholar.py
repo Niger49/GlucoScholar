@@ -159,7 +159,7 @@ class ImageProcessor:
     def __init__(self):
         pytesseract.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
         # return
-    
+
     def extract_text(self, image_path):
         """
         Extracts text from an image using Tesseract OCR.
@@ -183,18 +183,19 @@ class InformationFetcher:
     def clean_query(self, text):
         # Enhanced keyword extraction
         keywords = []
-        medical_terms = ['diabetes', 'glucose', 'hba1c', 'blood sugar', 
+        medical_terms = ['diabetes', 'glucose', 'hba1c', 'blood sugar',
                        'insulin', 'hyperglycemia']
-        
+
         text_lower = text.lower()
         for term in medical_terms:
             if term in text_lower:
                 keywords.append(term)
-        
+
         if not keywords:
             keywords = text.split()[:5]
-            
+
         search_query = " ".join(keywords) + " site:.org OR site:.gov"
+        print(f"Search Query: {search_query}")
         return search_query.strip()
 
 
@@ -208,11 +209,11 @@ class InformationFetcher:
 
             # Clean and prepare search query
             query = self.clean_query(text)
-            
+
             # Perform search
             results = []
             try:
-                for url in search(query, num_results=10):
+                for url in search(query):
                     # Filter and clean URLs
                     if self.is_valid_url(url):
                         results.append(url)
@@ -234,12 +235,12 @@ class InformationFetcher:
     def is_valid_url(self, url):
         # Filter out Google search URLs and verify it's a proper medical resource
         if any(x in url.lower() for x in [
-            'google.com/search', 
-            'google.com/url', 
+            'google.com/search',
+            'google.com/url',
             'google.com/webhp'
         ]):
             return False
-            
+
         # Check for medical/diabetes related domains
         valid_domains = [
             'diabetes.org',
