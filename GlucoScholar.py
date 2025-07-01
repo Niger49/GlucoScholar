@@ -19,7 +19,7 @@ from sklearn.preprocessing import LabelEncoder
 import pandas as pd
 import matplotlib.pyplot as plt
 import time
-from googlesearch import search
+from duckduckgo_search import DDGS
 import requests
 from bs4 import BeautifulSoup
 import random
@@ -177,55 +177,60 @@ class ImageProcessor:
 
 class InformationFetcher:
     def __init__(self):
-        self.search_delay = 3
-        self.last_search_time = 0
+        pass
 
     def clean_query(self, text):
-        # Enhanced keyword extraction
+        # Enhanced keyword extraction for better DuckDuckGo results
         keywords = []
         medical_terms = ['diabetes', 'glucose', 'hba1c', 'blood sugar',
-                       'insulin', 'hyperglycemia']
+                       'insulin', 'hyperglycemia', 'diabetic', 'blood test']
 
         text_lower = text.lower()
         for term in medical_terms:
             if term in text_lower:
                 keywords.append(term)
 
+        # If no medical terms found, use first few words
         if not keywords:
-            keywords = text.split()[:5]
+            words = text.split()[:3]
+            keywords = [word for word in words if len(word) > 2]
 
-        search_query = " ".join(keywords) + " site:.org OR site:.gov"
+        # Create search query optimized for medical content
+        search_query = " ".join(keywords)
         print(f"Search Query: {search_query}")
         return search_query.strip()
 
 
     def google_search(self, text):
+        """
+        Search using DuckDuckGo (more reliable than Google for programmatic access)
+        """
         try:
-            # Ensure minimum delay between searches
-            current_time = time.time()
-            time_since_last = current_time - self.last_search_time
-            if time_since_last < self.search_delay:
-                time.sleep(self.search_delay - time_since_last)
-
             # Clean and prepare search query
             query = self.clean_query(text)
 
-            # Perform search
+            # Perform search using DuckDuckGo
             results = []
             try:
-                for url in search(query):
-                    # Filter and clean URLs
-                    if self.is_valid_url(url):
-                        results.append(url)
-                    if len(results) >= 5:
-                        break
-                    time.sleep(1)
+                with DDGS() as ddgs:
+                    # Search for medical/health related content
+                    search_results = ddgs.text(
+                        query + " diabetes health medical",
+                        max_results=10,
+                        safesearch='moderate'
+                    )
+
+                    for result in search_results:
+                        url = result.get('href', '')
+                        if self.is_valid_url(url):
+                            results.append(url)
+                        if len(results) >= 5:
+                            break
 
             except Exception as e:
-                print(f"Search failed: {e}")
+                print(f"DuckDuckGo search failed: {e}")
                 return self.get_default_urls()
 
-            self.last_search_time = time.time()
             return results if results else self.get_default_urls()
 
         except Exception as e:

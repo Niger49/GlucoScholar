@@ -3,6 +3,7 @@ matplotlib
 opencv-python-headless
 pytesseract
 google
+duckduckgo-search
 # wikipedia==1.4.0
 scikit-learn
 customtkinter
