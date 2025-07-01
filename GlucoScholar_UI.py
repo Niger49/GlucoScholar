@@ -832,7 +832,7 @@ class DiabetesPredictorApp:
             # Update medical recommendations
             self.advice_text.delete("0.0", "end")  # CTk syntax
 
-            recommendations = self.get_medical_recommendations(prediction[0], input_data)
+            recommendations = self.get_medical_recommendations(result, input_data)
             self.advice_text.insert("0.0", "\n\nPersonalized Recommendations:\n\n")
             for rec in recommendations:
                 self.advice_text.insert("end", f"• {rec}\n")
@@ -888,7 +888,7 @@ class DiabetesPredictorApp:
         recommendations = []
 
         # General recommendations
-        if prediction == 1:
+        if prediction == "Diabetic":
             recommendations.extend([
                 "🟥 Medical Alert: Predictive results indicate diabetes risk. Please consult a healthcare professional immediately.",
                 "🔔 Recommendation: Schedule fasting blood glucose and HbA1c tests with your doctor."
